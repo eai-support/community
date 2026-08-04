@@ -1,0 +1,50 @@
+title: "[Show & Tell] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This Discussion is public. Share only content you are authorized to
+        publish. Do not include credentials, private endpoints, customer data,
+        confidential configuration, logs, or vulnerability details.
+
+        Use the private routes for security or confidential support. The Code
+        of Conduct applies; moderators may redirect, edit-request, minimize,
+        lock, or report content.
+  - type: input
+    id: summary
+    attributes:
+      label: Public Summary
+      description: Give the community a concise, customer-safe introduction.
+    validations:
+      required: true
+  - type: textarea
+    id: what-to-share
+    attributes:
+      label: What would you like to share?
+      description: Describe a public example, community activity, or event.
+    validations:
+      required: true
+  - type: input
+    id: public-link
+    attributes:
+      label: Public Link
+      description: Optional public documentation, source, recording, or event page.
+    validations:
+      required: false
+  - type: textarea
+    id: learning
+    attributes:
+      label: What can others learn or reuse?
+      description: Highlight a reusable customer-safe lesson.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy-confirmation
+    attributes:
+      label: Public-content confirmation
+      options:
+        - label: I confirm that I removed credentials, personal data, confidential account details, private logs, and vulnerability details.
+          required: true
+    validations:
+      required: true

@@ -1,0 +1,54 @@
+title: "[Idea] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This Discussion is public. An idea creates no roadmap, release-date, or
+        delivery commitment. Do not include confidential context.
+
+        <!-- route:private-security -->
+        Use restricted-private security reporting for vulnerabilities.
+        <!-- route:private-support -->
+        Use authenticated support for account, tenant, contract, incident, or
+        confidential diagnostic matters.
+
+        The Code of Conduct applies. Moderators may redirect, edit-request,
+        minimize, lock, or report content under the published moderation policy.
+  - type: textarea
+    id: problem-or-opportunity
+    attributes:
+      label: Problem or Opportunity
+      description: Describe a customer-safe need, not an internal implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-outcome
+    attributes:
+      label: Proposed Outcome
+      description: Explain the public outcome you would find useful.
+    validations:
+      required: true
+  - type: textarea
+    id: who-benefits
+    attributes:
+      label: Who might benefit?
+      description: Use general roles or workflows, not customer identities.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Optional public-safe workarounds or related public links.
+    validations:
+      required: false
+  - type: checkboxes
+    id: privacy-confirmation
+    attributes:
+      label: Public-content confirmation
+      options:
+        - label: I confirm that I removed credentials, personal data, confidential account details, private logs, and vulnerability details.
+          required: true
+    validations:
+      required: true

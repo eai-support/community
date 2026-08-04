@@ -1,0 +1,51 @@
+title: "[Integration] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This public category covers customer-safe integration or extension
+        patterns. Do not publish credentials, private endpoints, confidential
+        configuration, customer data, logs, or vulnerability details.
+
+        Use restricted-private security reporting for vulnerabilities and
+        authenticated support for confidential assistance. The Code of Conduct
+        applies; moderators may redirect, edit-request, minimize, lock, or
+        report content.
+  - type: input
+    id: integration-name
+    attributes:
+      label: Integration or Extension
+      description: Use a public product, protocol, or extension name.
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: Describe the customer-safe interoperability goal.
+    validations:
+      required: true
+  - type: textarea
+    id: public-context
+    attributes:
+      label: Public Context
+      description: Link only public documentation and use synthetic configuration.
+    validations:
+      required: true
+  - type: textarea
+    id: reusable-pattern
+    attributes:
+      label: Reusable Pattern or Question
+      description: Explain what the community could reuse or answer.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy-confirmation
+    attributes:
+      label: Public-content confirmation
+      options:
+        - label: I confirm that I removed credentials, personal data, confidential account details, private logs, and vulnerability details.
+          required: true
+    validations:
+      required: true

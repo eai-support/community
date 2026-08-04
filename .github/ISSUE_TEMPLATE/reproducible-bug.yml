@@ -1,0 +1,94 @@
+name: Reproducible bug
+description: Report a sanitized, reproducible public product defect.
+title: "[Bug] "
+labels:
+  - kind/bug
+  - status/needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This Issue is public. For vulnerability details use private security
+        reporting. For confidential account, contractual, tenant, incident, or
+        diagnostic help use authenticated customer support.
+  - type: dropdown
+    id: product-component
+    attributes:
+      label: Product/Component
+      options:
+        - EnterpriseAI Platform
+        - Documentation
+        - Integration or extension
+        - Community tooling
+        - Other public component
+    validations:
+      required: true
+  - type: input
+    id: affected-version
+    attributes:
+      label: Affected Version
+      description: Use a public release or documentation version.
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment-mode
+    attributes:
+      label: Deployment Mode
+      options:
+        - EnterpriseAI managed service
+        - Customer-managed deployment
+        - Local development or evaluation
+        - Documentation only
+    validations:
+      required: true
+  - type: dropdown
+    id: customer-impact
+    attributes:
+      label: Customer Impact
+      description: Describe observable impact only; this is not contractual severity or priority.
+      options:
+        - Blocks a documented public workflow
+        - Degrades a documented public workflow
+        - Produces an incorrect result with a workaround
+        - Minor or intermittent customer-visible issue
+    validations:
+      required: true
+  - type: dropdown
+    id: regression-status
+    attributes:
+      label: Regression Status
+      options:
+        - "Yes"
+        - "No"
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Sanitized Reproduction
+      description: Provide the smallest public-safe steps using synthetic data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-result
+    attributes:
+      label: Expected Result
+    validations:
+      required: true
+  - type: textarea
+    id: actual-result
+    attributes:
+      label: Actual Result
+      description: Describe the behavior; do not attach logs or confidential diagnostics.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy-confirmation
+    attributes:
+      label: Public-content confirmation
+      options:
+        - label: I confirm that I removed credentials, personal data, customer or tenant identifiers, private URLs, unsanitized logs, and vulnerability details.
+          required: true
+    validations:
+      required: true

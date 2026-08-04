@@ -1,0 +1,76 @@
+name: Weekly community service digest
+
+on:
+  schedule:
+    - cron: "41 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-community-digest-${{ github.repository }}
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  digest:
+    if: >-
+      github.repository == 'eai-tools/community' &&
+      vars.COMMUNITY_METRICS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: community-metrics
+    permissions:
+      contents: read
+      issues: read
+      discussions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Extract minimized public event ledger and compute all service metrics
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        env:
+          DIGEST_PATH: ${{ runner.temp }}/community-digest.json
+        with:
+          script: |
+            const fs = require("node:fs");
+            const { pathToFileURL } = require("node:url");
+            const moduleUrl = pathToFileURL(
+              `${process.env.GITHUB_WORKSPACE}/.github/scripts/run-community-digest.mjs`,
+            );
+            const { buildCommunityDigest } = await import(moduleUrl.href);
+            const digest = await buildCommunityDigest({
+              github,
+              owner: context.repo.owner,
+              repository: context.repo.repo,
+            });
+            fs.writeFileSync(process.env.DIGEST_PATH, JSON.stringify(digest), {
+              mode: 0o600,
+            });
+            core.info(`Community metric period is ${digest.period_status}; aggregate body is not logged.`);
+
+      - name: Deliver to the approved private reporting boundary
+        if: vars.COMMUNITY_DIGEST_DELIVERY_ENABLED == 'true'
+        env:
+          COMMUNITY_DIGEST_ENDPOINT: ${{ secrets.COMMUNITY_DIGEST_ENDPOINT }}
+          COMMUNITY_DIGEST_TOKEN: ${{ secrets.COMMUNITY_DIGEST_TOKEN }}
+          DIGEST_PATH: ${{ runner.temp }}/community-digest.json
+        run: |
+          if ! curl --proto '=https' --tlsv1.2 --fail --silent \
+            --header "Authorization: Bearer ${COMMUNITY_DIGEST_TOKEN}" \
+            --header "Content-Type: application/json" \
+            --data-binary "@${DIGEST_PATH}" \
+            --output /dev/null \
+            "${COMMUNITY_DIGEST_ENDPOINT}" 2>/dev/null; then
+            echo "Private digest delivery failed; use the approved manual fallback." >&2
+            exit 1
+          fi
+
+      - name: Remove temporary aggregate
+        if: always()
+        env:
+          DIGEST_PATH: ${{ runner.temp }}/community-digest.json
+        run: |
+          if [ -f "${DIGEST_PATH}" ]; then
+            rm "${DIGEST_PATH}"
+          fi

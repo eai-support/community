@@ -1,0 +1,61 @@
+name: Documentation problem
+description: Report missing, incorrect, or unclear public documentation.
+title: "[Docs] "
+labels:
+  - kind/documentation
+  - status/needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This Issue is public. Do not paste private configuration, logs, account
+        details, or vulnerability information.
+  - type: input
+    id: documentation-url
+    attributes:
+      label: Public Documentation URL
+      description: Link to the public page where the problem appears.
+    validations:
+      required: true
+  - type: input
+    id: affected-version
+    attributes:
+      label: Affected Version
+      description: Use a public product or documentation version.
+    validations:
+      required: true
+  - type: dropdown
+    id: problem-type
+    attributes:
+      label: Documentation Problem
+      options:
+        - Incorrect guidance
+        - Missing guidance
+        - Unclear guidance
+        - Broken public example or link
+        - Terminology inconsistency
+    validations:
+      required: true
+  - type: textarea
+    id: current-content
+    attributes:
+      label: What is wrong or missing?
+      description: Quote only the minimum public text needed to identify the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: suggested-change
+    attributes:
+      label: Suggested Change
+      description: Optional customer-safe wording or outcome.
+    validations:
+      required: false
+  - type: checkboxes
+    id: privacy-confirmation
+    attributes:
+      label: Public-content confirmation
+      options:
+        - label: I confirm that I removed credentials, personal data, customer or tenant identifiers, private URLs, unsanitized logs, and vulnerability details.
+          required: true
+    validations:
+      required: true

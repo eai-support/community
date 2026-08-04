@@ -1,0 +1,177 @@
+name: Needs-information reconciliation
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Public Issue number for human-confirmed closure
+        required: false
+        type: number
+      confirm_close:
+        description: Confirm closure after reviewing the public Issue
+        required: false
+        default: false
+        type: boolean
+      confirm_not_exempt:
+        description: Confirm this is not a confirmed bug, security matter, or active contractual case
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: needs-information-${{ github.repository }}
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  reconcile:
+    if: >-
+      github.repository == 'eai-tools/community' &&
+      vars.PUBLIC_SUPPORT_AUTOMATION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Reconcile reminders and human-confirmed closure
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const dayMs = 24 * 60 * 60 * 1000;
+            const requestMarker = "<!-- eai-needs-info-request-v1 -->";
+            const reminderMarker = "<!-- eai-needs-info-reminder-v1 -->";
+            const closureMarker = "<!-- eai-needs-info-closure-v1 -->";
+            const trustedMarkerAssociations = new Set([
+              "OWNER",
+              "MEMBER",
+              "COLLABORATOR",
+            ]);
+            const trustedMarkerAuthor = (comment) =>
+              trustedMarkerAssociations.has(comment.author_association) ||
+              comment.user?.login === "github-actions[bot]";
+
+            const dispatchedNumber = Number(context.payload.inputs?.issue_number || 0);
+            const candidates = dispatchedNumber
+              ? [{ number: dispatchedNumber }]
+              : await github.paginate(github.rest.issues.listForRepo, {
+                  owner,
+                  repo,
+                  state: "open",
+                  labels: "status/needs-info",
+                  per_page: 100,
+                });
+
+            for (const candidate of candidates) {
+              const { data: issue } = await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number: candidate.number,
+              });
+              if (issue.pull_request) continue;
+              const labels = issue.labels.map((label) =>
+                typeof label === "string" ? label : label.name,
+              );
+              if (
+                !labels.includes("status/needs-info") ||
+                labels.includes("status/confirmed")
+              ) {
+                continue;
+              }
+
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: issue.number,
+                per_page: 100,
+              });
+              const requests = comments
+                .filter(
+                  (comment) =>
+                    comment.body?.includes(requestMarker) &&
+                    trustedMarkerAuthor(comment),
+                )
+                .sort((left, right) =>
+                  left.created_at.localeCompare(right.created_at),
+                );
+              if (requests.length === 0) continue;
+              const latestRequest = requests.at(-1);
+              const reporterComment = comments
+                .filter(
+                  (comment) =>
+                    comment.user?.login === issue.user?.login &&
+                    Date.parse(comment.created_at) > Date.parse(latestRequest.created_at),
+                )
+                .at(-1);
+              if (reporterComment) continue;
+
+              const ageDays = Math.floor(
+                (Date.now() - Date.parse(latestRequest.created_at)) / dayMs,
+              );
+              const reminded = comments.some(
+                (comment) =>
+                  comment.body?.includes(reminderMarker) &&
+                  trustedMarkerAuthor(comment) &&
+                  Date.parse(comment.created_at) >
+                    Date.parse(latestRequest.created_at),
+              );
+
+              if (ageDays >= 7 && !reminded) {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: `${reminderMarker}
+            This is the single reminder for the customer-safe information
+            requested above. Do not add sensitive material; use the approved
+            private route when needed.`,
+                });
+                continue;
+              }
+
+              if (ageDays > 30) {
+                core.info(`Issue ${issue.number} requires manual overdue review.`);
+                continue;
+              }
+
+              if (ageDays >= 21 && context.eventName === "workflow_dispatch") {
+                const { data: permission } =
+                  await github.rest.repos.getCollaboratorPermissionLevel({
+                    owner,
+                    repo,
+                    username: context.actor,
+                  });
+                const mayClose = ["admin", "maintain", "write"].includes(
+                  permission.permission,
+                );
+                const confirmed =
+                  context.payload.inputs?.confirm_close === "true" &&
+                  context.payload.inputs?.confirm_not_exempt === "true";
+                if (!mayClose || !confirmed) {
+                  core.setFailed("Human closure confirmation or maintainer permission is missing.");
+                  return;
+                }
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: `${closureMarker}
+            We are closing this item because the requested customer-safe
+            information was not supplied. A maintainer confirmed that it is not
+            exempt. Ask to reopen with new public-safe evidence.`,
+                });
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  state: "closed",
+                  state_reason: "not_planned",
+                });
+              }
+            }

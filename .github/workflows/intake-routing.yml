@@ -1,0 +1,365 @@
+name: Public intake routing
+
+on:
+  discussion:
+    types: [created, answered, unanswered]
+  discussion_comment:
+    types: [created]
+  issues:
+    types: [opened, reopened, edited, labeled, unlabeled, assigned, unassigned]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: intake-${{ github.event.discussion.node_id || github.event.issue.node_id || github.run_id }}
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  reconcile-discussion:
+    if: >-
+      github.repository == 'eai-tools/community' &&
+      vars.PUBLIC_SUPPORT_AUTOMATION_ENABLED == 'true' &&
+      (github.event_name == 'discussion' ||
+      github.event_name == 'discussion_comment')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      discussions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Reread and reconcile the current Discussion
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        with:
+          script: |
+            const path = require("node:path");
+            const {
+              hasTrustedLifecycleMarker,
+            } = require(path.join(
+              process.env.GITHUB_WORKSPACE,
+              ".github/scripts/trusted-lifecycle-marker.cjs",
+            ));
+            const allowedRepository = "eai-tools/community";
+            if (context.payload.repository.full_name !== allowedRepository) {
+              core.info("Ignored event outside the configured public repository.");
+              return;
+            }
+
+            const discussionId = context.payload.discussion.node_id;
+            const categoryRoutes = {
+              "help-and-q-a": "community",
+              "ideas-and-product-feedback": "product",
+              "integrations-and-extensions": "community",
+              "show-and-tell-community-and-events": "community",
+              "announcements-and-changelog": "community",
+            };
+            const categorySlug = context.payload.discussion.category.slug;
+            const routeKey = categoryRoutes[categorySlug];
+            if (!routeKey) {
+              core.setOutput("manual_moderation_required", "unknown-category");
+              core.info("Unknown Discussion category routed to human moderation.");
+              return;
+            }
+            core.setOutput("route_key", routeKey);
+            const query = `
+              query CurrentDiscussion($id: ID!, $cursor: String) {
+                node(id: $id) {
+                  ... on Discussion {
+                    id
+                    url
+                    title
+                    isAnswered
+                    updatedAt
+                    comments(first: 100, after: $cursor) {
+                      nodes { body author { login } authorAssociation }
+                      pageInfo { hasNextPage endCursor }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const current = { comments: [] };
+            let cursor = null;
+            do {
+              const response = await github.graphql(query, { id: discussionId, cursor });
+              if (!response.node) {
+                core.setFailed("The current Discussion is not visible to this installation.");
+                return;
+              }
+              if (!current.id) Object.assign(current, response.node);
+              current.comments.push(...response.node.comments.nodes);
+              cursor = response.node.comments.pageInfo.hasNextPage
+                ? response.node.comments.pageInfo.endCursor
+                : null;
+            } while (cursor);
+
+            const addComment = async (body) => github.graphql(
+              `mutation AddDiscussionComment($id: ID!, $body: String!) {
+                addDiscussionComment(input: { discussionId: $id, body: $body }) {
+                  comment { id }
+                }
+              }`,
+              { id: current.id, body },
+            );
+
+            const hasMarker = (marker) =>
+              hasTrustedLifecycleMarker(current.comments, marker);
+
+            if (
+              context.eventName === "discussion" &&
+              context.payload.action === "created" &&
+              !hasMarker("<!-- eai-community-privacy-v1 -->")
+            ) {
+              await addComment(`<!-- eai-community-privacy-v1 -->
+            Thanks for starting a public Discussion. Keep all follow-up
+            customer-safe. Do not add credentials, personal data, confidential
+            account details, private logs, or vulnerability details. Use the
+            restricted security or authenticated support route when needed.`);
+            }
+
+            if (
+              context.eventName === "discussion" &&
+              context.payload.action === "answered" &&
+              current.isAnswered &&
+              !hasMarker("<!-- eai-docs-candidate-v1 -->")
+            ) {
+              const candidate = {
+                source_url: current.url,
+                public_topic: current.title,
+                reason: "accepted-discussion-answer",
+                nominated_at: new Date().toISOString(),
+              };
+              core.setOutput("knowledge_candidate", JSON.stringify(candidate));
+              await addComment(`<!-- eai-docs-candidate-v1 -->
+            This accepted answer has been nominated for human documentation
+            review. Nomination creates no publication or release commitment.`);
+            }
+
+            if (
+              context.eventName === "discussion" &&
+              context.payload.action === "unanswered"
+            ) {
+              core.info("Answer state reconciled; historical candidate evidence is retained.");
+            }
+
+            if (context.eventName === "discussion_comment") {
+              const authorAssociation =
+                context.payload.comment.author_association?.toUpperCase() ?? "NONE";
+              const actorKind =
+                context.payload.comment.user?.type === "Bot" ? "bot" : "user";
+              const responseMeasurement = {
+                source_url: current.url,
+                occurred_at: context.payload.comment.created_at,
+                actor_kind: actorKind,
+                qualifies_as_human_response:
+                  actorKind === "user" &&
+                  ["MEMBER", "OWNER", "COLLABORATOR"].includes(authorAssociation),
+              };
+              core.setOutput(
+                "human_response_measurement",
+                JSON.stringify(responseMeasurement),
+              );
+              core.info("Discussion comment event reconciled without copying comment content.");
+            }
+
+  reconcile-issue:
+    if: >-
+      github.repository == 'eai-tools/community' &&
+      vars.PUBLIC_SUPPORT_AUTOMATION_ENABLED == 'true' &&
+      (github.event_name == 'issues' || github.event_name == 'issue_comment')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      triage_notification_intent: ${{ steps.reconcile.outputs.triage_notification_intent }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Reread and reconcile the current Issue
+        id: reconcile
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        env:
+          PRIVATE_WORK_LINKAGE_ENABLED: ${{ secrets.PRIVATE_WORK_LINKAGE_ENABLED }}
+        with:
+          script: |
+            const path = require("node:path");
+            const {
+              hasTrustedLifecycleMarker,
+            } = require(path.join(
+              process.env.GITHUB_WORKSPACE,
+              ".github/scripts/trusted-lifecycle-marker.cjs",
+            ));
+            const allowedRepository = "eai-tools/community";
+            if (context.payload.repository.full_name !== allowedRepository) {
+              core.info("Ignored event outside the configured public repository.");
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.issue.number;
+            const { data: current } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number,
+            });
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const hasMarker = (marker) =>
+              hasTrustedLifecycleMarker(comments, marker);
+
+            const publicKindLabels = new Set([
+              "kind/bug",
+              "kind/documentation",
+              "kind/accessibility",
+            ]);
+            const publicLifecycleLabels = new Set([
+              "status/needs-triage",
+              "status/needs-info",
+              "status/confirmed",
+              "status/planned",
+              "status/duplicate",
+              "status/no-repro",
+            ]);
+            const currentLabels = current.labels.map((label) =>
+              typeof label === "string" ? label : label.name,
+            );
+            const unsafeClassification = currentLabels.filter(
+              (label) =>
+                (label.startsWith("kind/") && !publicKindLabels.has(label)) ||
+                (label.startsWith("status/") && !publicLifecycleLabels.has(label)),
+            );
+            if (unsafeClassification.length > 0) {
+              core.setOutput("manual_triage_required", "unapproved-public-classification");
+            }
+
+            if (context.eventName === "issues" && context.payload.action === "opened") {
+              if (!currentLabels.some((label) => publicLifecycleLabels.has(label))) {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number,
+                  labels: ["status/needs-triage"],
+                });
+              }
+              if (!hasMarker("<!-- eai-issue-privacy-v1 -->")) {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number,
+                  body: `<!-- eai-issue-privacy-v1 -->
+            Thanks for the public report. Keep follow-up customer-safe and do
+            not add credentials, personal data, customer or tenant identifiers,
+            private URLs, unsanitized logs, or vulnerability details.`,
+                });
+              }
+              core.setOutput(
+                "triage_notification_intent",
+                JSON.stringify({
+                  public_url: current.html_url,
+                  route_key: "triage",
+                  requested_action: "classify-public-issue",
+                }),
+              );
+            }
+
+            if (context.eventName === "issue_comment") {
+              const authorAssociation =
+                context.payload.comment.author_association?.toUpperCase() ?? "NONE";
+              const actorKind =
+                context.payload.comment.user?.type === "Bot" ? "bot" : "user";
+              core.setOutput(
+                "issue_human_response_measurement",
+                JSON.stringify({
+                  public_url: current.html_url,
+                  occurred_at: context.payload.comment.created_at,
+                  actor_kind: actorKind,
+                  qualifies_as_human_response:
+                    actorKind === "user" &&
+                    ["MEMBER", "OWNER", "COLLABORATOR"].includes(authorAssociation),
+                }),
+              );
+            }
+
+            if (
+              process.env.PRIVATE_WORK_LINKAGE_ENABLED === "true" &&
+              context.eventName === "issues" &&
+              context.payload.action === "opened"
+            ) {
+              core.setOutput(
+                "private_link_request",
+                JSON.stringify({
+                  source: "github",
+                  kind: "issue",
+                  repository: allowedRepository,
+                  node_id: current.node_id,
+                  number: current.number,
+                  url: current.html_url,
+                  public_kind_label:
+                    currentLabels.find((label) => publicKindLabels.has(label)) ?? null,
+                }),
+              );
+            }
+
+  notify-triage-owner:
+    needs: reconcile-issue
+    if: >-
+      github.repository == 'eai-tools/community' &&
+      github.event_name == 'issues' &&
+      github.event.action == 'opened' &&
+      vars.PUBLIC_SUPPORT_AUTOMATION_ENABLED == 'true' &&
+      vars.TRIAGE_NOTIFICATION_ENABLED == 'true' &&
+      needs.reconcile-issue.outputs.triage_notification_intent != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: community-notifications
+    permissions:
+      contents: read
+    steps:
+      - name: Deliver opaque primary-to-backup triage handoff
+        env:
+          PRIMARY_ENDPOINT: ${{ secrets.TRIAGE_NOTIFICATION_PRIMARY_ENDPOINT }}
+          BACKUP_ENDPOINT: ${{ secrets.TRIAGE_NOTIFICATION_BACKUP_ENDPOINT }}
+          PRIMARY_TIMEOUT_SECONDS: ${{ vars.TRIAGE_PRIMARY_TIMEOUT_SECONDS }}
+          BACKUP_TIMEOUT_SECONDS: ${{ vars.TRIAGE_BACKUP_TIMEOUT_SECONDS }}
+          PUBLIC_ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PUBLIC_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -eu
+          primary_timeout="${PRIMARY_TIMEOUT_SECONDS:-10}"
+          backup_timeout="${BACKUP_TIMEOUT_SECONDS:-20}"
+          case "${primary_timeout}:${backup_timeout}" in
+            *[!0-9:]*|:|*:0|0:*) echo "Notification timeouts are invalid." >&2; exit 1 ;;
+          esac
+          if [ "${backup_timeout}" -le "${primary_timeout}" ]; then
+            echo "Backup notification timeout must exceed the primary timeout." >&2
+            exit 1
+          fi
+          payload="$(printf '{"schema_version":1,"event":"public-issue-opened","repository":"%s","issue_number":%s,"route_key":"triage"}' "${PUBLIC_REPOSITORY}" "${PUBLIC_ISSUE_NUMBER}")"
+          deliver() {
+            endpoint="$1"
+            timeout="$2"
+            curl --proto '=https' --tlsv1.2 --fail --silent \
+              --max-time "${timeout}" \
+              --header "Content-Type: application/json" \
+              --data-binary "${payload}" \
+              --output /dev/null \
+              "${endpoint}" 2>/dev/null
+          }
+          if deliver "${PRIMARY_ENDPOINT}" "${primary_timeout}"; then
+            echo "Primary triage owner handoff acknowledged; receipt is this workflow run."
+          elif deliver "${BACKUP_ENDPOINT}" "${backup_timeout}"; then
+            echo "Backup triage owner handoff acknowledged; receipt is this workflow run."
+          else
+            echo "Both protected triage notification destinations failed; use the manual fallback." >&2
+            exit 1
+          fi

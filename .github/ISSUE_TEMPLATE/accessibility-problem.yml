@@ -1,0 +1,75 @@
+name: Accessibility problem
+description: Report a customer-safe accessibility barrier in a public product experience.
+title: "[Accessibility] "
+labels:
+  - kind/accessibility
+  - status/needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This Issue is public. Describe the barrier without personal, medical,
+        account, or confidential information. Use synthetic examples.
+  - type: dropdown
+    id: product-component
+    attributes:
+      label: Product/Component
+      options:
+        - EnterpriseAI Platform
+        - Documentation
+        - Integration or extension
+        - Community tooling
+        - Other public component
+    validations:
+      required: true
+  - type: input
+    id: affected-version
+    attributes:
+      label: Affected Version
+      description: Use a public release or documentation version.
+    validations:
+      required: true
+  - type: dropdown
+    id: barrier-type
+    attributes:
+      label: Accessibility Barrier
+      options:
+        - Keyboard access
+        - Screen reader or semantic structure
+        - Focus order or visibility
+        - Color or contrast
+        - Zoom or text reflow
+        - Motion or timing
+        - Captions or transcripts
+        - Other customer-visible barrier
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Sanitized Reproduction
+      description: Provide public-safe steps using synthetic data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-result
+    attributes:
+      label: Expected Accessible Result
+    validations:
+      required: true
+  - type: textarea
+    id: assistive-technology
+    attributes:
+      label: Assistive Technology
+      description: Optional public product and version information only; do not include personal details.
+    validations:
+      required: false
+  - type: checkboxes
+    id: privacy-confirmation
+    attributes:
+      label: Public-content confirmation
+      options:
+        - label: I confirm that I removed credentials, personal data, customer or tenant identifiers, private URLs, unsanitized logs, and vulnerability details.
+          required: true
+    validations:
+      required: true

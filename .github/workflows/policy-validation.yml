@@ -1,0 +1,184 @@
+name: Policy validation
+
+on:
+  pull_request: {}
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  policy-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Validate public policies and unresolved markers
+        env:
+          ACTIVATION_STAGE: ${{ vars.PUBLIC_SUPPORT_ACTIVATION_STAGE }}
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const {
+            isSpecialUseHostname: isSpecialUseHost,
+          } = require("./.github/scripts/public-url-policy.cjs");
+          const policies = [
+            "SUPPORT.md",
+            "SECURITY.md",
+            "CODE_OF_CONDUCT.md",
+            "CONTRIBUTING.md",
+            "GOVERNANCE.md",
+          ];
+          for (const file of policies) {
+            if (!fs.existsSync(file)) {
+              if (process.env.ACTIVATION_STAGE === "active") {
+                throw new Error(`${file} is required in the active stage`);
+              }
+              continue;
+            }
+            const content = fs.readFileSync(file, "utf8");
+            for (const required of [
+              "Policy owner role:",
+              "Last reviewed:",
+              "Next review due:",
+              "quarterly",
+              "material change",
+            ]) {
+              if (!content.toLowerCase().includes(required.toLowerCase())) {
+                throw new Error(`${file} is missing required review metadata`);
+              }
+            }
+          }
+          const unresolvedWords = [
+            ["TO", "DO"].join(""),
+            ["T", "BD"].join(""),
+            ["REPLACE", "_ME"].join(""),
+          ];
+          const unresolved = new RegExp(
+            [
+              `\\b(?:${unresolvedWords.join("|")})\\b`,
+              "<[A-Z][A-Z0-9_-]*>",
+              `${["Place", "holder"].join("")}:\\s*implemented by a later delivery task`,
+            ].join("|"),
+            "i",
+          );
+          const visit = (directory) => {
+            for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+              const target = path.join(directory, entry.name);
+              if (entry.isDirectory()) visit(target);
+              else if (
+                [".md", ".yaml", ".yml"].includes(
+                  path.extname(entry.name).toLowerCase(),
+                )
+              ) {
+                const content = fs.readFileSync(target, "utf8");
+                if (unresolved.test(content)) {
+                  throw new Error(`${target} contains an unresolved publishable marker`);
+                }
+              }
+            }
+          };
+          visit(".");
+          NODE
+
+  link-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Validate public URL policy
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const {
+            isSpecialUseHostname: isSpecialUseHost,
+          } = require("./.github/scripts/public-url-policy.cjs");
+          const files = [];
+          const visit = (directory) => {
+            for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+              const target = path.join(directory, entry.name);
+              if (entry.isDirectory()) visit(target);
+              else if (
+                [".md", ".yaml", ".yml"].includes(
+                  path.extname(entry.name).toLowerCase(),
+                )
+              ) files.push(target);
+            }
+          };
+          visit(".");
+          for (const file of files) {
+            const content = fs.readFileSync(file, "utf8");
+            for (const match of content.matchAll(/https?:\/\/[^\s)"']+/g)) {
+              const url = new URL(match[0]);
+              if (url.protocol !== "https:" || url.username || url.password) {
+                throw new Error(`${file} contains a non-public-safe URL`);
+              }
+              if (isSpecialUseHost(url.hostname)) {
+                throw new Error(`${file} contains a reserved destination`);
+              }
+            }
+          }
+          NODE
+
+  public-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Reject protected material from public content
+        run: node .github/scripts/public-boundary-policy.cjs
+
+  form-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Parse and validate Issue and Discussion forms
+        env:
+          ACTIVATION_STAGE: ${{ vars.PUBLIC_SUPPORT_ACTIVATION_STAGE }}
+        run: |
+          ruby <<'RUBY'
+          require "yaml"
+          issue_forms = Dir[".github/ISSUE_TEMPLATE/*.{yml,yaml}"].reject { |file| file.end_with?("config.yml") }
+          discussion_forms = Dir[".github/DISCUSSION_TEMPLATE/*.{yml,yaml}"]
+          (issue_forms + discussion_forms).each do |file|
+            form = YAML.safe_load(
+              File.read(file),
+              permitted_classes: [],
+              aliases: false,
+              filename: file
+            )
+            raise "#{file} has no body" unless form["body"].is_a?(Array)
+            confirmation = form["body"].find { |item| item["id"] == "privacy-confirmation" }
+            raise "#{file} has no privacy confirmation" unless confirmation
+            raise "#{file} confirmation is optional" unless confirmation.dig("validations", "required") == true
+            options = confirmation.dig("attributes", "options")
+            raise "#{file} confirmation option is invalid" unless options&.length == 1 && options[0]["required"] == true
+          end
+          issue_required = %w[issues_activation discussions_activation active].include?(ENV["ACTIVATION_STAGE"])
+          discussion_required = %w[discussions_activation active].include?(ENV["ACTIVATION_STAGE"])
+          raise "three Issue Forms are required" if issue_required && issue_forms.length != 3
+          raise "four Discussion Forms are required" if discussion_required && discussion_forms.length != 4
+          config_path = ".github/ISSUE_TEMPLATE/config.yml"
+          if File.exist?(config_path)
+            config = YAML.safe_load(
+              File.read(config_path),
+              permitted_classes: [],
+              aliases: false,
+              filename: config_path
+            )
+            raise "blank Issues must be disabled" unless config["blank_issues_enabled"] == false
+          elsif issue_required
+            raise "Issue template configuration is required"
+          end
+          RUBY

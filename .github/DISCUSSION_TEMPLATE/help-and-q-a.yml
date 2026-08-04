@@ -1,0 +1,67 @@
+title: "[Q&A] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Keep confidential and security information private
+
+        This Discussion is public. Do not include credentials, personal data,
+        confidential account details, private logs, tenant or customer
+        identifiers, private URLs, or vulnerability details.
+
+        <!-- route:private-security -->
+        For a suspected vulnerability, stop here and use **Report a Security
+        Vulnerability**, the restricted-private route in the published support
+        menu.
+
+        <!-- route:private-support -->
+        For confidential account, contractual, tenant, incident, or diagnostic
+        help, stop here and use **Authenticated Customer Support**.
+
+        The Code of Conduct applies. Moderators may redirect, edit-request,
+        minimize, lock, or report content under the published moderation policy.
+  - type: input
+    id: summary
+    attributes:
+      label: Question summary
+      description: Ask one customer-safe question that another user could recognize.
+      placeholder: How do I use a documented EnterpriseAI capability?
+    validations:
+      required: true
+  - type: dropdown
+    id: product-area
+    attributes:
+      label: Public product area
+      description: Choose the closest customer-facing area. Do not enter an internal repository or project name.
+      options:
+        - EnterpriseAI Platform
+        - Documentation
+        - Integration or extension
+        - Community tooling
+        - Other public area
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: What would you like to know?
+      description: Include only context that is safe to publish and retain.
+    validations:
+      required: true
+  - type: textarea
+    id: what-tried
+    attributes:
+      label: What have you already tried?
+      description: Link to public documentation where useful. Do not paste logs or confidential configuration.
+    validations:
+      required: false
+  - type: checkboxes
+    id: privacy-confirmation
+    attributes:
+      label: Public-content confirmation
+      options:
+        - label: I confirm that I removed credentials, personal data, confidential account details, private logs, and vulnerability details.
+          required: true
+    validations:
+      required: true
