@@ -1,0 +1,39 @@
+name: Dependabot merge delay
+
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  dependabot-merge-delay:
+    name: dependabot-merge-delay
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce 21-day review window for Dependabot PRs
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login || '' }}
+          PR_CREATED_AT: ${{ github.event.pull_request.created_at || '' }}
+          MIN_AGE_DAYS: "21"
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" != "pull_request" ]; then echo "Non pull_request event ($EVENT_NAME); Dependabot age was checked on the PR."; exit 0; fi
+          if [ "$PR_AUTHOR" != "dependabot[bot]" ]; then echo "Not a Dependabot PR; no merge-delay window required."; exit 0; fi
+          created_epoch=$(date -u -d "$PR_CREATED_AT" +%s)
+          now_epoch=$(date -u +%s)
+          min_age_seconds=$((MIN_AGE_DAYS * 24 * 60 * 60))
+          age_seconds=$((now_epoch - created_epoch))
+          ready_epoch=$((created_epoch + min_age_seconds))
+          ready_at=$(date -u -d "@$ready_epoch" "+%Y-%m-%dT%H:%M:%SZ")
+          if [ "$age_seconds" -lt "$min_age_seconds" ]; then
+            remaining_seconds=$((min_age_seconds - age_seconds))
+            remaining_days=$(((remaining_seconds + 86399) / 86400))
+            echo "::error title=Dependabot review window::Dependabot PRs must remain open for at least ${MIN_AGE_DAYS} days before merge. This PR can merge after ${ready_at} UTC, about ${remaining_days} day(s) from now."
+            exit 1
+          fi
+          echo "Dependabot PR is at least ${MIN_AGE_DAYS} days old; merge-delay window passed."

@@ -1,9 +1,19 @@
 # EnterpriseAI Community
 
-This repository is the public support and community hub for EnterpriseAI. It
-provides reusable questions and answers, structured customer-safe defect
-intake, product feedback, community guidance, and the public policies for using
-those channels.
+Welcome! This is the public place to get help with EnterpriseAI, learn from
+other builders, report a reproducible problem, and share an idea.
+
+Start here:
+
+- [Ask a question](https://github.com/eai-tools/community/discussions/categories/help-and-q-a)
+- [Report a bug](https://github.com/eai-tools/community/issues/new/choose)
+- [Share an idea](https://github.com/eai-tools/community/discussions/categories/ideas-and-product-feedback)
+- [Read the support guide](SUPPORT.md)
+- [Report a security vulnerability privately](SECURITY.md)
+
+Please search existing questions before opening a new thread. A clear title,
+the product or tool involved, and a small sanitized reproduction help everyone
+respond faster.
 
 ## Choose the right help route
 
@@ -14,9 +24,9 @@ indexed or retained. Remove credentials, personal or customer data, tenant
 identifiers, confidential account details, private URLs, unsanitized logs, and
 vulnerability details before posting.
 
-The destination links in this review source remain approval-pending. The launch
-renderer replaces this review-safe table with owner-approved, verified HTTPS
-destinations before publication.
+For private account, contractual, incident, or diagnostic matters, use the
+authenticated support route described in [SUPPORT.md](SUPPORT.md). GitHub is a
+public community channel, not a private case-management system.
 
 <!-- routes:generated:start -->
 | Route | Handling | Availability |
@@ -39,7 +49,8 @@ destinations before publication.
 
 Do not post security vulnerabilities, credentials, confidential diagnostics,
 account or tenant information, contractual matters, or private service
-incidents. Use the corresponding private route in the published menu.
+incidents. Use [SECURITY.md](SECURITY.md) for vulnerability disclosure and
+[SUPPORT.md](SUPPORT.md) for authenticated customer support.
 
 Canonical knowledge stays in reviewed, version-controlled documentation.
 GitHub Wiki and Pages remain disabled.
