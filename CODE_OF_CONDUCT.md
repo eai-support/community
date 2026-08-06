@@ -11,7 +11,7 @@ Review cadence: quarterly and after a material change
 EnterpriseAI is committed to a respectful, inclusive, accessible, and
 harassment-free public community. This policy applies to Issues, Discussions,
 pull requests, comments, events, and other spaces represented as part of the
-`eai-tools` community.
+`eai-support` community.
 
 ## Expected behavior
 

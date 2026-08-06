@@ -16,7 +16,7 @@ concurrency:
 jobs:
   digest:
     if: >-
-      github.repository == 'eai-tools/community' &&
+      github.repository == 'eai-support/community' &&
       vars.COMMUNITY_METRICS_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15

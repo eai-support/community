@@ -1,20 +1,20 @@
 blank_issues_enabled: false
 contact_links:
   - name: Help & Q&A
-    url: https://github.com/eai-tools/community/discussions/categories/help-and-q-a
+    url: https://github.com/eai-support/community/discussions/categories/help-and-q-a
     about: Ask a public, customer-safe question and reuse accepted answers.
   - name: Ideas & Product Feedback
-    url: https://github.com/eai-tools/community/discussions/categories/ideas-and-product-feedback
+    url: https://github.com/eai-support/community/discussions/categories/ideas-and-product-feedback
     about: Share public feedback without creating a roadmap or delivery commitment.
   - name: Report a Security Vulnerability
-    url: https://github.com/eai-tools/community/security/advisories/new
+    url: https://github.com/eai-support/community/security/advisories/new
     about: Submit vulnerability details through restricted-private reporting, never a public Issue.
   - name: Authenticated Customer Support
-    url: https://github.com/eai-tools/community/blob/main/SUPPORT.md#authenticated-customer-support
+    url: https://github.com/eai-support/community/blob/main/SUPPORT.md#authenticated-customer-support
     about: Use the approved private route for confidential account, contractual, incident, or diagnostic matters.
   - name: Documentation
-    url: https://github.com/eai-tools/community/blob/main/README.md#choose-the-right-help-route
+    url: https://github.com/eai-support/community/blob/main/README.md#choose-the-right-help-route
     about: Find the approved canonical documentation route.
   - name: Service Status
-    url: https://github.com/eai-tools/community/blob/main/SUPPORT.md#service-status
+    url: https://github.com/eai-support/community/blob/main/SUPPORT.md#service-status
     about: Find the approved authoritative public service-status route.

@@ -21,7 +21,7 @@ concurrency:
 jobs:
   reconcile-discussion:
     if: >-
-      github.repository == 'eai-tools/community' &&
+      github.repository == 'eai-support/community' &&
       vars.PUBLIC_SUPPORT_AUTOMATION_ENABLED == 'true' &&
       (github.event_name == 'discussion' ||
       github.event_name == 'discussion_comment')
@@ -43,7 +43,7 @@ jobs:
               process.env.GITHUB_WORKSPACE,
               ".github/scripts/trusted-lifecycle-marker.cjs",
             ));
-            const allowedRepository = "eai-tools/community";
+            const allowedRepository = "eai-support/community";
             if (context.payload.repository.full_name !== allowedRepository) {
               core.info("Ignored event outside the configured public repository.");
               return;
@@ -169,7 +169,7 @@ jobs:
 
   reconcile-issue:
     if: >-
-      github.repository == 'eai-tools/community' &&
+      github.repository == 'eai-support/community' &&
       vars.PUBLIC_SUPPORT_AUTOMATION_ENABLED == 'true' &&
       (github.event_name == 'issues' || github.event_name == 'issue_comment')
     runs-on: ubuntu-latest
@@ -195,7 +195,7 @@ jobs:
               process.env.GITHUB_WORKSPACE,
               ".github/scripts/trusted-lifecycle-marker.cjs",
             ));
-            const allowedRepository = "eai-tools/community";
+            const allowedRepository = "eai-support/community";
             if (context.payload.repository.full_name !== allowedRepository) {
               core.info("Ignored event outside the configured public repository.");
               return;
@@ -313,7 +313,7 @@ jobs:
   notify-triage-owner:
     needs: reconcile-issue
     if: >-
-      github.repository == 'eai-tools/community' &&
+      github.repository == 'eai-support/community' &&
       github.event_name == 'issues' &&
       github.event.action == 'opened' &&
       vars.PUBLIC_SUPPORT_AUTOMATION_ENABLED == 'true' &&
