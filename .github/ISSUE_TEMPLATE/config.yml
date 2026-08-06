@@ -1,10 +1,10 @@
 blank_issues_enabled: false
 contact_links:
   - name: Help & Q&A
-    url: https://github.com/eai-support/community/discussions/categories/help-and-q-a
+    url: https://github.com/eai-support/community/discussions/categories/q-a
     about: Ask a public, customer-safe question and reuse accepted answers.
   - name: Ideas & Product Feedback
-    url: https://github.com/eai-support/community/discussions/categories/ideas-and-product-feedback
+    url: https://github.com/eai-support/community/discussions/categories/ideas
     about: Share public feedback without creating a roadmap or delivery commitment.
   - name: Report a Security Vulnerability
     url: https://github.com/eai-support/community/security/advisories/new
