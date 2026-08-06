@@ -30,7 +30,7 @@ fields, comments, workflow logs, or evidence.
 
 ## Operator views and search fallbacks
 
-All views are scoped to `eai-tools/community`. The declarative definitions and
+All views are scoped to `eai-support/community`. The declarative definitions and
 exact fallback queries are in `ops/github/taxonomy.yaml`:
 
 - Needs Triage

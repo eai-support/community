@@ -8,7 +8,7 @@ Review cadence: quarterly and after a material change
 
 ## Scope
 
-This policy governs the public `eai-tools` organization profile, community
+This policy governs the public `eai-support` organization profile, community
 support hub, community-health defaults, intake forms, public automation,
 taxonomy, moderation guidance, and customer-safe operating evidence.
 

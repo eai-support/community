@@ -5,9 +5,9 @@ other builders, report a reproducible problem, and share an idea.
 
 Start here:
 
-- [Ask a question](https://github.com/eai-tools/community/discussions/categories/help-and-q-a)
-- [Report a bug](https://github.com/eai-tools/community/issues/new/choose)
-- [Share an idea](https://github.com/eai-tools/community/discussions/categories/ideas-and-product-feedback)
+- [Ask a question](https://github.com/eai-support/community/discussions/categories/help-and-q-a)
+- [Report a bug](https://github.com/eai-support/community/issues/new/choose)
+- [Share an idea](https://github.com/eai-support/community/discussions/categories/ideas-and-product-feedback)
 - [Read the support guide](SUPPORT.md)
 - [Report a security vulnerability privately](SECURITY.md)
 
