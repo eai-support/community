@@ -8,8 +8,8 @@ Start here:
 - [Ask a question](https://github.com/eai-support/community/discussions/categories/q-a)
 - [Report a bug](https://github.com/eai-support/community/issues/new/choose)
 - [Share an idea](https://github.com/eai-support/community/discussions/categories/ideas)
-- [Read the support guide](SUPPORT.md)
-- [Report a security vulnerability privately](SECURITY.md)
+- [Read the support guide](https://github.com/eai-support/community/blob/main/SUPPORT.md)
+- [Report a security vulnerability privately](https://github.com/eai-support/community/blob/main/SECURITY.md)
 
 Please search existing questions before opening a new thread. A clear title,
 the product or tool involved, and a small sanitized reproduction help everyone
@@ -25,7 +25,7 @@ identifiers, confidential account details, private URLs, unsanitized logs, and
 vulnerability details before posting.
 
 For private account, contractual, incident, or diagnostic matters, use the
-authenticated support route described in [SUPPORT.md](SUPPORT.md). GitHub is a
+authenticated support route described in [SUPPORT.md](https://github.com/eai-support/community/blob/main/SUPPORT.md). GitHub is a
 public community channel, not a private case-management system.
 
 <!-- routes:generated:start -->
@@ -49,8 +49,9 @@ public community channel, not a private case-management system.
 
 Do not post security vulnerabilities, credentials, confidential diagnostics,
 account or tenant information, contractual matters, or private service
-incidents. Use [SECURITY.md](SECURITY.md) for vulnerability disclosure and
-[SUPPORT.md](SUPPORT.md) for authenticated customer support.
+incidents. Use [SECURITY.md](https://github.com/eai-support/community/blob/main/SECURITY.md)
+for vulnerability disclosure and [SUPPORT.md](https://github.com/eai-support/community/blob/main/SUPPORT.md)
+for authenticated customer support.
 
 Canonical knowledge stays in reviewed, version-controlled documentation.
 GitHub Wiki and Pages remain disabled.
