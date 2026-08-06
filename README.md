@@ -8,6 +8,7 @@ Start here:
 - [Ask a question](https://github.com/eai-support/community/discussions/categories/questions)
 - [Report a bug](https://github.com/eai-support/community/issues/new/choose)
 - [Share an idea](https://github.com/eai-support/community/discussions/categories/feature-requests)
+- [Join the real-time Discord conversation](https://discord.com/channels/1534743402921328721/1534743403592548494)
 - [Read the support guide](https://github.com/eai-support/community/blob/main/SUPPORT.md)
 - [Report a security vulnerability privately](https://github.com/eai-support/community/blob/main/SECURITY.md)
 
@@ -27,6 +28,8 @@ vulnerability details before posting.
 For private account, contractual, incident, or diagnostic matters, use the
 authenticated support route described in [SUPPORT.md](https://github.com/eai-support/community/blob/main/SUPPORT.md). GitHub is a
 public community channel, not a private case-management system.
+Discord is useful for quick, customer-safe conversation. When a question or
+answer should remain searchable and reusable, capture it in GitHub Discussions.
 
 <!-- routes:generated:start -->
 | Route | Handling | Availability |
